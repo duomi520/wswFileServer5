@@ -1,4 +1,4 @@
-// wswFileServer5 project main.go
+﻿// wswFileServer5 project main.go
 package main
 
 //多文件上传
@@ -91,7 +91,7 @@ type ListFiles struct {
 
 func List(c *gin.Context) {
 	lm := make([]ListFiles, 0)
-	//遍历目录，读出文件名、大小、及修改时间
+	//遍历目录，读出文件名、大小
 	filepath.Walk(storage, func(path string, fi os.FileInfo, err error) error {
 		if nil == fi {
 			return err
