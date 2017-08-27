@@ -1,4 +1,4 @@
-// wswFileServer5 project main.go
+﻿// wswFileServer5 project main.go
 package main
 
 //多文件上传
@@ -12,20 +12,21 @@ package main
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"io"
 	"net"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
-const (
-	port             = ":8086"    //端口
-	storageDirectory = "./files/" //上传文件目录
-)
+var port = ":8086"      //端口
+var storage = "./files" //上传文件目录
+var currentDirectory string
 
 func main() {
 	//读取本地局域网IP
@@ -41,6 +42,9 @@ func main() {
 			}
 		}
 	}
+	//读取当前目录
+	tempFile, _ := exec.LookPath(os.Args[0])
+	currentDirectory = filepath.Dir(tempFile)
 	//路由设置
 	r := gin.Default()
 	r.GET("/ping", func(c *gin.Context) {
@@ -48,6 +52,9 @@ func main() {
 	})
 	r.Static("/static", "./static")
 	r.Static("/files", "./files")
+	r.GET("/favicon.ico", func(c *gin.Context) {
+		c.File("favicon.ico")
+	})
 	r.GET("/", func(c *gin.Context) {
 		c.File("index.html")
 	})
@@ -58,22 +65,24 @@ func main() {
 	s := &http.Server{
 		Addr:           port,
 		Handler:        r,
-		ReadTimeout:    10 * time.Second,
-		WriteTimeout:   10 * time.Second,
+		ReadTimeout:    3600 * time.Second,
+		WriteTimeout:   3600 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}
 	s.ListenAndServe()
 }
 
+//DeleteFiles 删除文件
 type DeleteFiles struct {
 	FileName []string `json:"filename" binding:"required"`
 }
 
+//Delete 删除
 func Delete(c *gin.Context) {
 	var fl DeleteFiles
 	c.Bind(&fl)
 	for _, file := range fl.FileName {
-		err := os.Remove(storageDirectory + file) //删除文件
+		err := os.Remove(storage + "/" + file) //删除文件
 		if err != nil {
 			fmt.Println(time.Now().Format("2006-01-02 15:04:05"), file, "失败删除文件", err)
 		}
@@ -81,16 +90,18 @@ func Delete(c *gin.Context) {
 	c.String(http.StatusOK, "删除文件结束")
 }
 
+//ListFiles 文件列表
 type ListFiles struct {
 	Name string `json:"name"`
 	Size string `json:"size"`
 }
 
+//List 列出
 func List(c *gin.Context) {
 	lm := make([]ListFiles, 0)
-	//遍历目录，读出文件名、大小、及修改时间
-	filepath.Walk(storageDirectory, func(path string, fi os.FileInfo, err error) error {
-		if nil == fi {
+	//遍历目录，读出文件名、大小
+	filepath.Walk(storage, func(path string, fi os.FileInfo, err error) error {
+		if fi == nil {
 			return err
 		}
 		if fi.IsDir() {
@@ -106,6 +117,8 @@ func List(c *gin.Context) {
 	//返回目录json数据
 	c.JSON(http.StatusOK, lm)
 }
+
+//Upload 上传
 func Upload(c *gin.Context) {
 	c.Request.ParseMultipartForm(32 << 20) //在使用r.MultipartForm前必须先调用ParseMultipartForm方法，参数为最大缓存
 	if c.Request.MultipartForm != nil && c.Request.MultipartForm.File != nil {
@@ -116,28 +129,29 @@ func Upload(c *gin.Context) {
 		for n, fheader := range fhs {
 			//设置文件名
 			//newFileName := strconv.FormatInt(time.Now().UnixNano(), 10) + filepath.Ext(fheader.Filename) //十进制
-			newFileName := storageDirectory + fheader.Filename
+			newFileName := storage + "/" + fheader.Filename
 			//打开上传文件
 			uploadFile, err := fheader.Open()
+			defer uploadFile.Close()
 			if err != nil {
 				fmt.Println(err)
 				c.String(http.StatusBadRequest, "上传失败:", err.Error())
 				return
 			}
-			defer uploadFile.Close()
 			//保存文件
 			saveFile, err := os.Create(newFileName)
+			defer saveFile.Close()
 			if err != nil {
 				fmt.Println(err)
 				c.String(http.StatusBadRequest, "上传失败:", err.Error())
 				return
 			}
-			defer saveFile.Close()
 			io.Copy(saveFile, uploadFile)
 			//获取文件状态信息
 			fileStat, _ := saveFile.Stat()
 			//打印接收信息
 			fmt.Printf("%s  NO.: %d  Size: %d KB  Name：%s\n", time.Now().Format("2006-01-02 15:04:05"), n, fileStat.Size()/1024, newFileName)
+
 		}
 		c.String(http.StatusOK, "上传成功")
 	}
