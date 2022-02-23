@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>多文件上传</title>
+    <link rel="stylesheet" href="../static/css/bootstrap-3.4.1/bootstrap.min.css">
+    <link rel="stylesheet" href="../static/toastr/toastr.css">
+    <style type="text/css">
+    </style>
+</head>
+
+<body role="document" youdao="bind">
+    <!-- Fixed navbar -->
+    <nav class="navbar  navbar-default  navbar-fixed-top">
+        <div class="progress">
+            <div class="progress-bar progress-bar-striped" role="progressbar" aria-valuenow="60" aria-valuemin="0"
+                aria-valuemax="100" style="width: 0%" id="myprogress">
+                <span class="sr-only">0% Complete</span>
+            </div>
+        </div>
+        <div class="container">
+            <div class="navbar-header">
+                <form class="container form-inline form-horizontal " id="uploadForm" name="uploadForm" role="form"
+                    enctype="multipart/form-data" action="/upload" method="POST">
+                    <div class="form-group "><input type="file" id="userfile" name="userfile" multiple /></div>
+                    <div class="form-group pull-right"><button type="button" class="btn btn-primary" id="upload"
+                            onclick="UpLoadFile()">上传</button><button type="button" class="btn btn-danger pull-right"
+                            onclick="DelFile()">删除选中的文件</button></div>
+                </form>
+            </div>
+        </div>
+    </nav>
+    <div class="container theme-showcase" role="main">
+        <div class="page-header"> </div>
+        <div class="row">
+            <table class="table table-striped table-responsive table-hover" id="datas">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>名称</th>
+                        <th>大小(KB)</th>
+                        <th>修改日期</th>
+                        <th>选择</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr id="mytemplate">
+                        <td id="NO"></td>
+                        <td id="Name"></td>
+                        <td id="Size"></td>
+                        <td id="ModTime"></td>
+                        <td id="Operation"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="row"> <span id="assemble" class="pull-right" style="font-weight:bold">0 个文件 0 KB</span> </div>
+    </div>
+
+    <!-- /container -->
+    <script src="../static/js/jquery-3.6.0.min.js"></script>
+    <script src="../static/js/bootstrap-3.4.1/bootstrap.min.js"></script>
+    <script src="../static/toastr/toastr.min.js"></script>
+    <script>
+        var space = "";
+        var url = "";
+        $(function () {
+            var str = window.location.pathname;
+            space = str.substr(str.lastIndexOf("/"));
+            url = "/directory" + space;
+            toastr.options.positionClass = 'toast-bottom-right';
+            $('.progress').height(5);
+            ListFile();
+        });
+
+        function DelFile() {
+            var filename = new Array();
+            $(".mycheckbox").each(function () {
+                if ($(this).is(':checked')) {
+                    filename.push($(this).parent().prev().prev().prev().text());
+                }
+            });
+            //没有选择时退出
+            if (filename.length < 1) return;
+            var o = new Object();
+            o.filename = filename;
+            $.ajax({
+                type: 'DELETE',
+                url: url,
+                data: JSON.stringify(o),
+                contentType: 'application/json',
+                cache: false,
+                success: function (msg) {
+                    ListFile();
+                    toastr.success("删除文件完成");
+                },
+                error: function () {
+                    toastr.error("删除文件出错");
+                }
+            });
+        }
+
+        function ListFile() {
+            $(".myrow").remove();
+            $.ajax({
+                //使用get方法访问后台
+                type: "GET",
+                //返回json格式的数据
+                dataType: "json",
+                //要访问的后台地址
+                url: url,
+                cache: false,
+                //msg为返回的数据，在这里做数据绑定
+                success: function (msg) {
+                    var count = 0;
+                    var total = 0;
+                    $("#mytemplate").show();
+                    var prefix = "<a href='/spaces" + space + "/";
+                    $.each(msg, function (i, n) {
+                        var row = $("#mytemplate").clone();
+                        row.addClass("myrow");
+                        row.find("#NO").text(i);
+                        row.find("#Name").html(prefix + n.name + "'>" + n.name + "</a>");
+                        var size = parseInt(n.size);
+                        row.find("#Size").text(size.toLocaleString());
+                        row.find("#ModTime").text(n.time);
+                        row.find("#Operation").html(
+                            "<input class='mycheckbox'type='checkbox' value='" + i + "'>");
+                        //添加到模板的容器中
+                        row.appendTo("#datas");
+                        count++;
+                        total = total + size;
+                    });
+                    $("#assemble").text(count + " 个文件 " + total.toLocaleString() + " KB");
+                    //隐藏模板
+                    $("#mytemplate").hide();
+                },
+                error: function () {
+                    toastr.error("连接list错误");
+                }
+            });
+        }
+
+        function UpLoadFile() {
+            var str = $("#userfile").val();
+            if (str.length == 0) {
+                toastr.warning("请选择文件");
+                return;
+            }
+            $("#myprogress").show();
+            // FormData 对象
+            var form = new FormData(document.forms.namedItem("uploadForm"));
+            // XMLHttpRequest 对象
+            var xhr = new XMLHttpRequest();
+            xhr.open("post", url, true);
+            // xhr.upload 这是html5新增的api,储存了上传过程中的信息
+            xhr.upload.onprogress = function (ev) {
+                var percent = 0;
+                if (ev.lengthComputable) {
+                    percent = 100 * ev.loaded / ev.total;
+                    $("#myprogress").width(percent + "%");
+                    $("#upload").text((ev.loaded / 1024).toLocaleString() + "/" + (ev.total / 1024)
+                        .toLocaleString() + " KB");
+                }
+            };
+            xhr.onload = function (oEvent) {
+                if (xhr.status == 200) {
+                    ListFile();
+                    $("#userfile").val("");
+                    $("#upload").text("上传");
+                    toastr.success("文件上传完成");
+                    setTimeout(function () {
+                        $("#myprogress").hide();
+                        $("#myprogress").width("0%");
+                    }, 1000);
+                }
+            }
+            xhr.send(form);
+        }
+    </script>
+</body>
+
+</html>
