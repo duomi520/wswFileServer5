@@ -79,14 +79,11 @@ func main() {
 	signal.Notify(exitChan, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	go func() {
 		<-exitChan
-		var once sync.Once
-		once.Do(func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-			defer cancel()
-			if err := srv.Shutdown(ctx); err != nil {
-				log.Println("main :", err.Error())
-			}
-		})
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+		if err := srv.Shutdown(ctx); err != nil {
+			log.Println("main :", err.Error())
+		}
 	}()
 	//debug 模式
 	if len(os.Args) > 1 {
