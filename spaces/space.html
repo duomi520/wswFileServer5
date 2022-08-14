@@ -3,8 +3,11 @@
 
 <head>
     <meta charset="utf-8">
+    <!--IE将使用最新的引擎渲染网页-->
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>多文件上传</title>
+    <!--页面的宽带与设备屏幕的宽度一致，初始缩放比例1:1-->
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>空间</title>
     <link rel="stylesheet" href="../static/css/bootstrap-3.4.1/bootstrap.min.css">
     <link rel="stylesheet" href="../static/toastr/toastr.css">
     <style type="text/css">
@@ -24,10 +27,26 @@
             <div class="navbar-header">
                 <form class="container form-inline form-horizontal " id="uploadForm" name="uploadForm" role="form"
                     enctype="multipart/form-data" action="/upload" method="POST">
-                    <div class="form-group "><input type="file" id="userfile" name="userfile" multiple /></div>
-                    <div class="form-group pull-right"><button type="button" class="btn btn-primary" id="upload"
-                            onclick="UpLoadFile()">上传</button><button type="button" class="btn btn-danger pull-right"
-                            onclick="DelFile()">删除选中的文件</button></div>
+                    <div class="form-group pull-right">
+                        <div id="upload-panel" class="input-group">
+                            <input type="file" id="userfile" name="userfile" multiple />
+                            <span class="input-group-btn">
+                                <span class="glyphicon glyphicon glyphicon-floppy-saved"></span>
+                                <button type="button" class="btn btn-primary" id="upload"
+                                    onclick="UpLoadFile()">上传</button>
+                            </span>
+                        </div>
+                        <div id="choice-panel" class="btn-group">
+                            <span></span>
+                            <button type="button" class="btn btn-primary" onclick="ShowUpload()"> <span
+                                    class="glyphicon glyphicon glyphicon-home"></span>
+                                返回</button>
+                            <button type="button" class="btn btn-primary" onclick="ChoiceAll()"> <span
+                                    class="glyphicon glyphicon glyphicon-check"></span> 全选</button>
+                            <button type="button" class="btn btn-danger" onclick="DelFile()"> <span
+                                    class="glyphicon glyphicon glyphicon-trash"></span> 删除</button>
+                        </div>
+                    </div>
                 </form>
             </div>
         </div>
@@ -46,7 +65,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr id="mytemplate">
+                    <tr id="mytemplate-panel">
                         <td id="NO"></td>
                         <td id="Name"></td>
                         <td id="Size"></td>
@@ -56,7 +75,9 @@
                 </tbody>
             </table>
         </div>
-        <div class="row"> <span id="assemble" class="pull-right" style="font-weight:bold">0 个文件 0 KB</span> </div>
+        <div class="row">
+            <h4 id="assemble" class="pull-right text-muted"><strong>0 个文件 0 KB</strong></h4>
+        </div>
     </div>
 
     <!-- /container -->
@@ -72,6 +93,7 @@
             url = "/directory" + space;
             toastr.options.positionClass = 'toast-bottom-right';
             $('.progress').height(5);
+            $("#choice-panel").hide();
             ListFile();
         });
 
@@ -98,7 +120,9 @@
                 },
                 error: function () {
                     toastr.error("删除文件出错");
-                }
+
+                },
+                complete: ShowChoice(),
             });
         }
 
@@ -116,10 +140,10 @@
                 success: function (msg) {
                     var count = 0;
                     var total = 0;
-                    $("#mytemplate").show();
+                    $("#mytemplate-panel").show();
                     var prefix = "<a href='/spaces" + space + "/";
                     $.each(msg, function (i, n) {
-                        var row = $("#mytemplate").clone();
+                        var row = $("#mytemplate-panel").clone();
                         row.addClass("myrow");
                         row.find("#NO").text(i);
                         row.find("#Name").html(prefix + n.name + "'>" + n.name + "</a>");
@@ -127,7 +151,8 @@
                         row.find("#Size").text(size.toLocaleString());
                         row.find("#ModTime").text(n.time);
                         row.find("#Operation").html(
-                            "<input class='mycheckbox'type='checkbox' value='" + i + "'>");
+                            "<input class='mycheckbox' type='checkbox' value='" + i +
+                            "' onclick='ShowChoice()'>");
                         //添加到模板的容器中
                         row.appendTo("#datas");
                         count++;
@@ -135,7 +160,7 @@
                     });
                     $("#assemble").text(count + " 个文件 " + total.toLocaleString() + " KB");
                     //隐藏模板
-                    $("#mytemplate").hide();
+                    $("#mytemplate-panel").hide();
                 },
                 error: function () {
                     toastr.error("连接list错误");
@@ -155,7 +180,7 @@
             // XMLHttpRequest 对象
             var xhr = new XMLHttpRequest();
             xhr.open("post", url, true);
-            // xhr.upload 这是html5新增的api,储存了上传过程中的信息
+            // xhr.upload 储存上传过程中的信息
             xhr.upload.onprogress = function (ev) {
                 var percent = 0;
                 if (ev.lengthComputable) {
@@ -178,6 +203,21 @@
                 }
             }
             xhr.send(form);
+        }
+
+        function ChoiceAll() {
+            $(".mycheckbox").prop("checked", true)
+        }
+
+        function ShowChoice() {
+            $("#upload-panel").hide();
+            $("#choice-panel").show();
+        }
+
+        function ShowUpload() {
+            $(".mycheckbox").prop("checked", false)
+            $("#choice-panel").hide();
+            $("#upload-panel").show();
         }
     </script>
 </body>
