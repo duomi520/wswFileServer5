@@ -8,64 +8,84 @@
     <!--页面的宽带与设备屏幕的宽度一致，初始缩放比例1:1-->
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>空间</title>
-    <link rel="stylesheet" href="../static/css/bootstrap-3.4.1/bootstrap.min.css">
+    <link rel="stylesheet" href="../static/css/bootstrap-4.4.1/bootstrap.min.css">
     <link rel="stylesheet" href="../static/toastr/toastr.css">
     <style type="text/css">
     </style>
+    <!-- 图标库 https://icons.bootcss.com/#install -->
 </head>
 
-<body role="document" youdao="bind">
+<body>
     <!-- Fixed navbar -->
-    <nav class="navbar  navbar-default  navbar-fixed-top">
-        <div class="progress">
-            <div class="progress-bar progress-bar-striped" role="progressbar" aria-valuenow="60" aria-valuemin="0"
-                aria-valuemax="100" style="width: 0%" id="myprogress">
-                <span class="sr-only">0% Complete</span>
-            </div>
+    <nav class="navbar bg-light navbar-light navbar-fixed-top ">
+        <div class="col-sm-12 col-md-12 col-lg-12 col-xl-12 progress" style="height: 5px; display: none;">
+            <div id="progress-panel" class="progress-bar progress-bar-striped" style="width: 0%"> </div>
         </div>
-        <div class="container">
-            <div class="navbar-header">
-                <form class="container form-inline form-horizontal " id="uploadForm" name="uploadForm" role="form"
-                    enctype="multipart/form-data" action="/upload" method="POST">
-                    <div class="form-group pull-right">
-                        <div id="upload-panel" class="input-group">
-                            <input type="file" id="userfile" name="userfile" multiple />
-                            <span class="input-group-btn">
-                                <span class="glyphicon glyphicon glyphicon-floppy-saved"></span>
-                                <button type="button" class="btn btn-primary" id="upload"
-                                    onclick="UpLoadFile()">上传</button>
-                            </span>
-                        </div>
-                        <div id="choice-panel" class="btn-group">
-                            <span></span>
-                            <button type="button" class="btn btn-primary" onclick="ShowUpload()"> <span
-                                    class="glyphicon glyphicon glyphicon-home"></span>
-                                返回</button>
-                            <button type="button" class="btn btn-primary" onclick="ChoiceAll()"> <span
-                                    class="glyphicon glyphicon glyphicon-check"></span> 全选</button>
-                            <button type="button" class="btn btn-danger" onclick="DelFile()"> <span
-                                    class="glyphicon glyphicon glyphicon-trash"></span> 删除</button>
+        <div class="container small d-flex flex-row-reverse">
+            <form id="uploadForm" name="uploadForm" role="form" enctype="multipart/form-data" action="/upload"
+                method="POST">
+                <div id="upload-panel">
+                    <div class="input-group">
+                        <input class="input-group-prepend" type="file" id="userfile" name="userfile" multiple />
+                        <div class="input-group-append btn-group">
+                            <button type="button" class="btn btn-primary btn-sm" id="upload"
+                                onclick="UpLoadFile()">上传</button>
+                            <button type="button" class="btn btn-primary btn-sm" onclick="Laber">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                    class="bi bi-funnel-fill" viewBox="0 0 16 16">
+                                    <path
+                                        d="M1.5 1.5A.5.5 0 0 1 2 1h12a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.128.334L10 8.692V13.5a.5.5 0 0 1-.342.474l-3 1A.5.5 0 0 1 6 14.5V8.692L1.628 3.834A.5.5 0 0 1 1.5 3.5v-2z" />
+                                </svg></button>
                         </div>
                     </div>
-                </form>
-            </div>
+                </div>
+                <div id="file-panel" class="btn-group">
+                    <button type="button" class="btn btn-primary btn-sm mr-auto" onclick="ShowUpload()"> <svg
+                            xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                            class="bi bi-arrow-left-short" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd"
+                                d="M12 8a.5.5 0 0 1-.5.5H5.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L5.707 7.5H11.5a.5.5 0 0 1 .5.5z" />
+                        </svg> 返回</button>
+                    <button type="button" class="btn btn-primary btn-sm" onclick="ChoiceAll()"> <svg
+                            xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                            class="bi bi-check2-square" viewBox="0 0 16 16">
+                            <path
+                                d="M3 14.5A1.5 1.5 0 0 1 1.5 13V3A1.5 1.5 0 0 1 3 1.5h8a.5.5 0 0 1 0 1H3a.5.5 0 0 0-.5.5v10a.5.5 0 0 0 .5.5h10a.5.5 0 0 0 .5-.5V8a.5.5 0 0 1 1 0v5a1.5 1.5 0 0 1-1.5 1.5H3z" />
+                            <path
+                                d="m8.354 10.354 7-7a.5.5 0 0 0-.708-.708L8 9.293 5.354 6.646a.5.5 0 1 0-.708.708l3 3a.5.5 0 0 0 .708 0z" />
+                        </svg> 全选</button>
+                    <button type="button" class="btn btn-danger btn-sm" onclick="DelFile()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                            class="bi bi-trash" viewBox="0 0 16 16">
+                            <path
+                                d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z" />
+                            <path fill-rule="evenodd"
+                                d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z" />
+                        </svg> 删除</button>
+                    <button type="button" class="btn btn-primary btn-sm"><svg xmlns="http://www.w3.org/2000/svg"
+                            width="16" height="16" fill="currentColor" class="bi bi-funnel-fill" viewBox="0 0 16 16">
+                            <path
+                                d="M1.5 1.5A.5.5 0 0 1 2 1h12a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.128.334L10 8.692V13.5a.5.5 0 0 1-.342.474l-3 1A.5.5 0 0 1 6 14.5V8.692L1.628 3.834A.5.5 0 0 1 1.5 3.5v-2z" />
+                        </svg></button>
+                </div>
+            </form>
         </div>
     </nav>
-    <div class="container theme-showcase" role="main">
-        <div class="page-header"> </div>
+    <div class="container small">
         <div class="row">
-            <table class="table table-striped table-responsive table-hover" id="datas">
+            <table class="table tabl-light table-striped table-hover" style="word-break:break-all; word-wrap:break-all;"
+                id="datas-panel">
                 <thead>
                     <tr>
                         <th>#</th>
                         <th>名称</th>
-                        <th>大小(KB)</th>
+                        <th>大小</th>
                         <th>修改日期</th>
                         <th>选择</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr id="mytemplate-panel">
+                    <tr id="template-panel">
                         <td id="NO"></td>
                         <td id="Name"></td>
                         <td id="Size"></td>
@@ -75,14 +95,13 @@
                 </tbody>
             </table>
         </div>
-        <div class="row">
-            <h4 id="assemble" class="pull-right text-muted"><strong>0 个文件 0 KB</strong></h4>
+        <div class="d-flex flex-row-reverse">
+            <h6 id="assemble" class="text-muted"><strong>0 个文件 0 KB</strong></h6>
         </div>
     </div>
 
-    <!-- /container -->
     <script src="../static/js/jquery-3.6.0.min.js"></script>
-    <script src="../static/js/bootstrap-3.4.1/bootstrap.min.js"></script>
+    <script src="../static/js/bootstrap-4.4.1/bootstrap.min.js"></script>
     <script src="../static/toastr/toastr.min.js"></script>
     <script>
         var space = "";
@@ -92,14 +111,12 @@
             space = str.substr(str.lastIndexOf("/"));
             url = "/directory" + space;
             toastr.options.positionClass = 'toast-bottom-right';
-            $('.progress').height(5);
-            $("#choice-panel").hide();
+            $("#file-panel").hide();
             ListFile();
         });
-
         function DelFile() {
             var filename = new Array();
-            $(".mycheckbox").each(function () {
+            $(".file-checkbox").each(function () {
                 if ($(this).is(':checked')) {
                     filename.push($(this).parent().prev().prev().prev().text());
                 }
@@ -140,10 +157,10 @@
                 success: function (msg) {
                     var count = 0;
                     var total = 0;
-                    $("#mytemplate-panel").show();
+                    $("#template-panel").show();
                     var prefix = "<a href='/spaces" + space + "/";
                     $.each(msg, function (i, n) {
-                        var row = $("#mytemplate-panel").clone();
+                        var row = $("#template-panel").clone();
                         row.addClass("myrow");
                         row.find("#NO").text(i);
                         row.find("#Name").html(prefix + n.name + "'>" + n.name + "</a>");
@@ -151,30 +168,31 @@
                         row.find("#Size").text(size.toLocaleString());
                         row.find("#ModTime").text(n.time);
                         row.find("#Operation").html(
-                            "<input class='mycheckbox' type='checkbox' value='" + i +
+                            "<input class='file-checkbox' type='checkbox' value='" + i +
                             "' onclick='ShowChoice()'>");
                         //添加到模板的容器中
-                        row.appendTo("#datas");
+                        row.appendTo("#datas-panel");
                         count++;
                         total = total + size;
                     });
                     $("#assemble").text(count + " 个文件 " + total.toLocaleString() + " KB");
                     //隐藏模板
-                    $("#mytemplate-panel").hide();
+                    $("#template-panel").hide();
                 },
                 error: function () {
                     toastr.error("连接list错误");
                 }
             });
         }
-
+        var lock = false;
         function UpLoadFile() {
+            if (lock) return;
             var str = $("#userfile").val();
             if (str.length == 0) {
                 toastr.warning("请选择文件");
                 return;
             }
-            $("#myprogress").show();
+            $(".progress").show();
             // FormData 对象
             var form = new FormData(document.forms.namedItem("uploadForm"));
             // XMLHttpRequest 对象
@@ -185,7 +203,7 @@
                 var percent = 0;
                 if (ev.lengthComputable) {
                     percent = 100 * ev.loaded / ev.total;
-                    $("#myprogress").width(percent + "%");
+                    $("#progress-panel").width(percent + "%");
                     $("#upload").text((ev.loaded / 1024).toLocaleString() + "/" + (ev.total / 1024)
                         .toLocaleString() + " KB");
                 }
@@ -197,26 +215,35 @@
                     $("#upload").text("上传");
                     toastr.success("文件上传完成");
                     setTimeout(function () {
-                        $("#myprogress").hide();
-                        $("#myprogress").width("0%");
+                        $(".progress").hide();
+                        $("#progress-panel").width("0%");
                     }, 1000);
                 }
             }
+            xhr.onreadystatechange = function () {
+                switch (xhr.readyState) {
+                    case 4:
+                        lock = false;
+                        break;
+                }
+            }
+            lock = true;
+            //发送数据
             xhr.send(form);
         }
 
         function ChoiceAll() {
-            $(".mycheckbox").prop("checked", true)
+            $(".file-checkbox").prop("checked", true)
         }
 
         function ShowChoice() {
             $("#upload-panel").hide();
-            $("#choice-panel").show();
+            $("#file-panel").show();
         }
 
         function ShowUpload() {
-            $(".mycheckbox").prop("checked", false)
-            $("#choice-panel").hide();
+            $(".file-checkbox").prop("checked", false)
+            $("#file-panel").hide();
             $("#upload-panel").show();
         }
     </script>
