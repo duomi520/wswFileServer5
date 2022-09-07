@@ -150,11 +150,10 @@
                     $.each(msg, function (i, n) {
                         var row = $("#template-panel").clone();
                         row.addClass("myrow");
-                        row.find("#NO").text(i);
                         row.find("#Name").html(prefix + n.name + "'>" + n.name + "</a>");
                         var size = parseInt(n.size);
                         row.find("#Size").text(size.toLocaleString());
-                        row.find("#ModTime").text(n.time);
+                        row.find("#ModTime").text(String(n.time).substring(2));
                         row.find("#Operation").html(
                             "<input class='file-checkbox' type='checkbox' value='" + i +
                             "' onclick='ShowChoice()'>");
