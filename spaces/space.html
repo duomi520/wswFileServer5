@@ -16,12 +16,12 @@
 </head>
 
 <body>
-    <div class="col-sm-12 col-md-12 col-lg-12 col-xl-12 progress"
-        style="height: 5px;padding-left: 0px; padding-right: 0px;display: none;">
-        <div id="progress-panel" class="progress-bar progress-bar-striped" style="width: 0%"> </div>
-    </div>
     <!-- Fixed navbar -->
-    <nav class="navbar bg-light navbar-light navbar-fixed-top ">
+    <nav class="navbar bg-light navbar-light fixed-top">
+        <div class="col-sm-12 col-md-12 col-lg-12 col-xl-12 progress"
+            style="height: 5px;padding-left: 0px; padding-right: 0px;display: none;">
+            <div id="progress-panel" class="progress-bar progress-bar-striped" style="width: 0%"> </div>
+        </div>
         <form id="uploadForm" class="container small " name="uploadForm" role="form" enctype="multipart/form-data"
             action="/upload" method="POST">
             <div class="d-flex flex-row ">
@@ -61,8 +61,8 @@
             </div>
         </form>
     </nav>
-    <div class="container small">
-        <div class="row">
+    <div class="container small" style="padding-top: 46px;">
+        <div class="d-flex">
             <table class="table tabl-light table-striped table-hover" style="word-break:break-all; word-wrap:break-all;"
                 id="datas-panel">
                 <thead>
@@ -191,7 +191,7 @@
                 if (ev.lengthComputable) {
                     percent = 100 * ev.loaded / ev.total;
                     $("#progress-panel").width(percent + "%");
-                    $("#upload").text((ev.loaded / 1024).toLocaleString() + "/" + (ev.total / 1024)
+                    $("#upload").text(Math.trunc(ev.loaded / 1024).toLocaleString() + "/" + Math.trunc(ev.total / 1024)
                         .toLocaleString() + " KB");
                 }
             };
