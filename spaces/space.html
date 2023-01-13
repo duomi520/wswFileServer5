@@ -10,6 +10,7 @@
     <title>空间</title>
     <link rel="stylesheet" href="../static/css/bootstrap-4.4.1/bootstrap.min.css">
     <link rel="stylesheet" href="../static/toastr/toastr.css">
+    <link rel="stylesheet" href="../static/nprogress/nprogress.css">
     <style type="text/css">
     </style>
     <!-- 图标库 https://icons.bootcss.com/#install -->
@@ -18,10 +19,6 @@
 <body>
     <!-- Fixed navbar -->
     <nav class="navbar bg-light navbar-light fixed-top">
-        <div class="col-sm-12 col-md-12 col-lg-12 col-xl-12 progress"
-            style="height: 5px;padding-left: 0px; padding-right: 0px;display: none;">
-            <div id="progress-panel" class="progress-bar progress-bar-striped" style="width: 0%"> </div>
-        </div>
         <form id="uploadForm" class="container small " name="uploadForm" role="form" enctype="multipart/form-data"
             action="/upload" method="POST">
             <div class="d-flex flex-row ">
@@ -91,6 +88,7 @@
     <script src="../static/js/jquery-3.6.0.min.js"></script>
     <script src="../static/js/bootstrap-4.4.1/bootstrap.min.js"></script>
     <script src="../static/toastr/toastr.min.js"></script>
+    <script src="../static/nprogress/nprogress.js"></script>
     <script>
         var space = "";
         var url = "";
@@ -179,7 +177,7 @@
                 toastr.warning("请选择文件");
                 return;
             }
-            $(".progress").show();
+            NProgress.start();
             // FormData 对象
             var form = new FormData(document.forms.namedItem("uploadForm"));
             // XMLHttpRequest 对象
@@ -187,10 +185,8 @@
             xhr.open("post", url, true);
             // xhr.upload 储存上传过程中的信息
             xhr.upload.onprogress = function (ev) {
-                var percent = 0;
                 if (ev.lengthComputable) {
-                    percent = 100 * ev.loaded / ev.total;
-                    $("#progress-panel").width(percent + "%");
+                    NProgress.set(ev.loaded / ev.total);
                     $("#upload").text(Math.trunc(ev.loaded / 1024).toLocaleString() + "/" + Math.trunc(ev.total / 1024)
                         .toLocaleString() + " KB");
                 }
@@ -202,8 +198,7 @@
                     $("#upload").text("上传");
                     toastr.success("文件上传完成");
                     setTimeout(function () {
-                        $(".progress").hide();
-                        $("#progress-panel").width("0%");
+                        NProgress.done();
                     }, 1000);
                 }
             }
