@@ -9,8 +9,9 @@ package main
 
 import (
 	"context"
-	"github.com/gin-contrib/pprof"
+	"encoding/json"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -24,10 +25,12 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/gin-contrib/pprof"
+
 	"github.com/gin-gonic/gin"
 )
 
-//ListFiles 文件列表
+// ListFiles 文件列表
 type ListFiles struct {
 	Name    string `json:"name"`
 	Size    string `json:"size"`
@@ -35,7 +38,7 @@ type ListFiles struct {
 	modTime int64
 }
 
-//ByModTime 排序
+// ByModTime 排序
 type ByModTime []ListFiles
 
 func (a ByModTime) Len() int           { return len(a) }
@@ -43,9 +46,20 @@ func (a ByModTime) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByModTime) Less(i, j int) bool { return a[i].modTime > a[j].modTime }
 
 var listFilesMap sync.Map
+var memoryFile map[string][]byte
+
+func cachedFile(filename string) {
+	data, err := ioutil.ReadFile(filename)
+	if err != nil {
+		log.Fatal(err)
+	}
+	memoryFile[filename] = data
+}
 
 func main() {
+	memoryFile = make(map[string][]byte)
 	log.Println("Server start")
+	defer log.Println("Server stop")
 	gin.SetMode(gin.ReleaseMode)
 	//路由设置
 	r := gin.Default()
@@ -54,6 +68,7 @@ func main() {
 	r.GET("/favicon.ico", func(c *gin.Context) {
 		c.File("favicon.ico")
 	})
+	cachedFile("./spaces/space.html")
 	r.GET("/space/:name", func(c *gin.Context) {
 		name := c.Param("name")
 		//判断目录是否存在
@@ -61,10 +76,26 @@ func main() {
 		if err != nil {
 			c.String(http.StatusNotFound, "404 page not found")
 		} else {
-			c.File("./spaces/space.html")
+			var jsondata []byte
+			lm, ok := listFilesMap.Load(name)
+			if !ok {
+				lm = refreshCache(name)
+			}
+			//返回目录json数据
+			jsondata, err = json.Marshal(lm.([]ListFiles))
+			if err != nil {
+				log.Println("main :", err.Error())
+				c.String(http.StatusInternalServerError, "InternalServerError")
+				return
+			}
+			c.Writer.Write(memoryFile["./spaces/space.html"])
+			c.Writer.Write([]byte("\nvar datas = "))
+			c.Writer.Write(jsondata)
+			c.Writer.Write([]byte(";\n</script>\n</body>\n</html>"))
+			//c.File("./spaces/space.html")
 		}
 	})
-	r.GET("/directory/:name", List)
+	//r.GET("/directory/:name", List)
 	r.POST("/directory/:name", Upload)
 	r.DELETE("/directory/:name", Delete)
 	//启动服务
@@ -75,7 +106,7 @@ func main() {
 		MaxHeaderBytes: 1 << 20,
 	}
 	//监听信号 ctrl+c kill
-	exitChan := make(chan os.Signal)
+	exitChan := make(chan os.Signal, 16)
 	signal.Notify(exitChan, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	go func() {
 		<-exitChan
@@ -101,12 +132,12 @@ func main() {
 	}
 }
 
-//DeleteFiles 删除文件
+// DeleteFiles 删除文件
 type DeleteFiles struct {
 	FileName []string `json:"filename" binding:"required"`
 }
 
-//Delete 删除
+// Delete 删除
 func Delete(c *gin.Context) {
 	name := c.Param("name")
 	var fl DeleteFiles
@@ -120,11 +151,11 @@ func Delete(c *gin.Context) {
 			lost = lost + " | " + file
 		}
 	}
-	refreshCache(name)
+	lm := refreshCache(name)
 	if len(lost) == 0 {
-		c.String(http.StatusOK, "删除文件完成")
+		c.JSON(http.StatusOK, lm)
 	} else {
-		c.String(http.StatusInternalServerError, "删除失败:"+lost)
+		c.JSON(http.StatusInternalServerError, lm)
 	}
 }
 
@@ -154,7 +185,8 @@ func refreshCache(directory string) []ListFiles {
 	return lm
 }
 
-//List 列出文件清单
+/*
+// List 列出文件清单
 func List(c *gin.Context) {
 	name := c.Param("name")
 	lm, ok := listFilesMap.Load(name)
@@ -165,8 +197,8 @@ func List(c *gin.Context) {
 		c.JSON(http.StatusOK, refreshCache(name))
 	}
 }
-
-//Upload 上传
+*/
+// Upload 上传
 func Upload(c *gin.Context) {
 	name := c.Param("name")
 	//在使用r.MultipartForm前必须先调用ParseMultipartForm方法，参数为最大缓存
@@ -218,13 +250,11 @@ func Upload(c *gin.Context) {
 			log.Printf(" NO.: %d  Size: %d KB  Name：%s\n", n, fileStat.Size()/1024, newFileName)
 
 		}
-		refreshCache(name)
-		c.String(http.StatusOK, "上传成功")
+		lm := refreshCache(name)
+		c.JSON(http.StatusOK, lm)
 	}
 
 }
 
 //参考:
 // https://developer.mozilla.org/zh-CN/docs/Web/Guide/Using_FormData_Objects
-// http://www.cnblogs.com/fredlau/archive/2008/08/12/1266089.html
-// go tool pprof http://localhost/debug/pprof/heap
