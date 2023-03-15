@@ -1,10 +1,6 @@
 // FileServer project main.go
 package main
 
-//多文件上传
-//作者：
-//邮箱：
-//日期：2015-4-3
 //Bootstrap + Golang + HTML5 实现带进度条的多文件上传
 
 import (
@@ -92,10 +88,8 @@ func main() {
 			c.Writer.Write([]byte("\nvar datas = "))
 			c.Writer.Write(jsondata)
 			c.Writer.Write([]byte(";\n</script>\n</body>\n</html>"))
-			//c.File("./spaces/space.html")
 		}
 	})
-	//r.GET("/directory/:name", List)
 	r.POST("/directory/:name", Upload)
 	r.DELETE("/directory/:name", Delete)
 	//启动服务
@@ -185,19 +179,6 @@ func refreshCache(directory string) []ListFiles {
 	return lm
 }
 
-/*
-// List 列出文件清单
-func List(c *gin.Context) {
-	name := c.Param("name")
-	lm, ok := listFilesMap.Load(name)
-	if ok {
-		//返回目录json数据
-		c.JSON(http.StatusOK, lm.([]ListFiles))
-	} else {
-		c.JSON(http.StatusOK, refreshCache(name))
-	}
-}
-*/
 // Upload 上传
 func Upload(c *gin.Context) {
 	name := c.Param("name")
@@ -228,7 +209,7 @@ func Upload(c *gin.Context) {
 			}()
 			if err != nil {
 				log.Println(err)
-				c.String(http.StatusBadRequest, "上传失败:", err.Error())
+				c.JSON(http.StatusInternalServerError, refreshCache(name))
 				return
 			}
 			//保存文件
@@ -240,7 +221,7 @@ func Upload(c *gin.Context) {
 			}()
 			if err != nil {
 				log.Println(err)
-				c.String(http.StatusBadRequest, "上传失败:", err.Error())
+				c.JSON(http.StatusInternalServerError, refreshCache(name))
 				return
 			}
 			io.Copy(saveFile, uploadFile)
@@ -250,8 +231,7 @@ func Upload(c *gin.Context) {
 			log.Printf(" NO.: %d  Size: %d KB  Name：%s\n", n, fileStat.Size()/1024, newFileName)
 
 		}
-		lm := refreshCache(name)
-		c.JSON(http.StatusOK, lm)
+		c.JSON(http.StatusOK, refreshCache(name))
 	}
 
 }
