@@ -21,7 +21,7 @@ function datasPanel(msg) {
         var size = parseInt(msg[i].size);
         data += "<td>" + size.toLocaleString() + "</td>";
         data += "<td>" + String(msg[i].time).substring(2) + "</td>";
-        data += "<td><input class='file-checkbox' type='checkbox' value='" + i + "' onclick='ShowChoice()'></td></tr>";
+        data += "<td><input class='file-checkbox' type='checkbox' name='" + i + "' onclick='ShowChoice()'></td></tr>";
         count++;
         total = total + size;
     }

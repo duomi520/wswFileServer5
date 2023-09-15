@@ -7,12 +7,10 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -45,7 +43,7 @@ var listFilesMap sync.Map
 var memoryFile map[string][]byte
 
 func cachedFile(filename string) {
-	data, err := ioutil.ReadFile(filename)
+	data, err := os.ReadFile(filename)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -126,6 +124,35 @@ func main() {
 	}
 }
 
+func refreshCache(directory string) []ListFiles {
+	entries, err := os.ReadDir("./spaces/" + directory)
+	if err != nil {
+		log.Println("刷新目录失败：", err)
+		return nil
+	}
+	//遍历目录，读出文件名、大小
+	lm := make([]ListFiles, 0, len(entries))
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			fs, err := entry.Info()
+			if err == nil {
+				var m ListFiles
+				//避免XSS
+				m.Name = template.HTMLEscapeString(fs.Name())
+				m.Size = strconv.FormatInt(fs.Size()/1024, 10)
+				m.modTime = fs.ModTime().Unix()
+				m.ModTime = fs.ModTime().Format("2006-01-02 15:04:05")
+				lm = append(lm, m)
+			}
+		}
+	}
+	//排序
+	sort.Sort(ByModTime(lm))
+	//缓存
+	listFilesMap.Store(directory, lm)
+	return lm
+}
+
 // DeleteFiles 删除文件
 type DeleteFiles struct {
 	FileName []string `json:"filename" binding:"required"`
@@ -153,32 +180,6 @@ func Delete(c *gin.Context) {
 	}
 }
 
-func refreshCache(directory string) []ListFiles {
-	lm := make([]ListFiles, 0)
-	//遍历目录，读出文件名、大小
-	filepath.Walk("./spaces/"+directory, func(path string, fi os.FileInfo, err error) error {
-		if fi == nil {
-			return err
-		}
-		if fi.IsDir() {
-			return nil
-		}
-		var m ListFiles
-		//避免XSS
-		m.Name = template.HTMLEscapeString(fi.Name())
-		m.Size = strconv.FormatInt(fi.Size()/1024, 10)
-		m.modTime = fi.ModTime().Unix()
-		m.ModTime = fi.ModTime().Format("2006-01-02 15:04:05")
-		lm = append(lm, m)
-		return nil
-	})
-	//排序
-	sort.Sort(ByModTime(lm))
-	//缓存
-	listFilesMap.Store(directory, lm)
-	return lm
-}
-
 // Upload 上传
 func Upload(c *gin.Context) {
 	name := c.Param("name")
@@ -203,7 +204,7 @@ func Upload(c *gin.Context) {
 			//打开上传文件
 			uploadFile, err := fheader.Open()
 			defer func() {
-				if err = uploadFile.Close(); err != nil {
+				if err := uploadFile.Close(); err != nil {
 					log.Println(err)
 				}
 			}()
@@ -215,7 +216,7 @@ func Upload(c *gin.Context) {
 			//保存文件
 			saveFile, err := os.OpenFile(newFileName, os.O_WRONLY|os.O_CREATE, 0666)
 			defer func() {
-				if err = saveFile.Close(); err != nil {
+				if err := saveFile.Close(); err != nil {
 					log.Println(err)
 				}
 			}()
@@ -236,5 +237,4 @@ func Upload(c *gin.Context) {
 
 }
 
-//参考:
 // https://developer.mozilla.org/zh-CN/docs/Web/Guide/Using_FormData_Objects
