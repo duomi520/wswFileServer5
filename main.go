@@ -162,18 +162,22 @@ type DeleteFiles struct {
 func Delete(c *gin.Context) {
 	name := c.Param("name")
 	var fl DeleteFiles
-	lost := ""
+	lost := false
 	c.Bind(&fl)
-	for _, file := range fl.FileName {
+	for n, file := range fl.FileName {
+		delFileName := "./spaces/" + name + "/" + file
 		//删除文件
-		err := os.Remove("./spaces/" + name + "/" + file)
+		err := os.Remove(delFileName)
 		if err != nil {
-			log.Println(file, " 删除失败：", err)
-			lost = lost + " | " + file
+			log.Println(file, "删除失败：", err)
+			lost = true
+		} else {
+			//打印删除信息
+			log.Printf("删除 NO.: %d  Name：%s\n", n, delFileName)
 		}
 	}
 	lm := refreshCache(name)
-	if len(lost) == 0 {
+	if !lost {
 		c.JSON(http.StatusOK, lm)
 	} else {
 		c.JSON(http.StatusInternalServerError, lm)
@@ -183,13 +187,18 @@ func Delete(c *gin.Context) {
 // Upload 上传
 func Upload(c *gin.Context) {
 	name := c.Param("name")
+	var final error
+	defer func() {
+		if final != nil {
+			log.Println(final)
+			c.JSON(http.StatusInternalServerError, refreshCache(name))
+		}
+	}()
 	//在使用r.MultipartForm前必须先调用ParseMultipartForm方法，参数为最大缓存
 	c.Request.ParseMultipartForm(32 << 20)
 	if c.Request.MultipartForm != nil && c.Request.MultipartForm.File != nil {
 		//获取所有上传文件信息
 		fhs := c.Request.MultipartForm.File["userfile"]
-		num := len(fhs)
-		log.Printf("总文件数：%d 个文件", num)
 		//循环对每个文件进行处理
 		for n, fheader := range fhs {
 			str := fheader.Filename
@@ -203,34 +212,29 @@ func Upload(c *gin.Context) {
 			newFileName := "./spaces/" + name + "/" + str
 			//打开上传文件
 			uploadFile, err := fheader.Open()
-			defer func() {
-				if err := uploadFile.Close(); err != nil {
-					log.Println(err)
-				}
-			}()
 			if err != nil {
-				log.Println(err)
-				c.JSON(http.StatusInternalServerError, refreshCache(name))
+				final = err
 				return
 			}
 			//保存文件
 			saveFile, err := os.OpenFile(newFileName, os.O_WRONLY|os.O_CREATE, 0666)
-			defer func() {
-				if err := saveFile.Close(); err != nil {
-					log.Println(err)
-				}
-			}()
 			if err != nil {
-				log.Println(err)
-				c.JSON(http.StatusInternalServerError, refreshCache(name))
+				final = err
 				return
 			}
 			io.Copy(saveFile, uploadFile)
 			//获取文件状态信息
 			fileStat, _ := saveFile.Stat()
 			//打印接收信息
-			log.Printf(" NO.: %d  Size: %d KB  Name：%s\n", n, fileStat.Size()/1024, newFileName)
-
+			log.Printf("上传 NO.: %d  Size: %d KB  Name：%s\n", n, fileStat.Size()/1024, newFileName)
+			if err := saveFile.Close(); err != nil {
+				final = err
+				return
+			}
+			if err := uploadFile.Close(); err != nil {
+				final = err
+				return
+			}
 		}
 		c.JSON(http.StatusOK, refreshCache(name))
 	}
