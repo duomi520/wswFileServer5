@@ -105,7 +105,7 @@ func main() {
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 		defer cancel()
 		if err := srv.Shutdown(ctx); err != nil {
-			log.Println("main :", err.Error())
+			log.Fatal("main :", err.Error())
 		}
 	}()
 	//debug 模式
@@ -119,8 +119,8 @@ func main() {
 	r.GET("/ping", func(c *gin.Context) {
 		c.String(http.StatusOK, "pong")
 	})
-	if err := srv.ListenAndServe(); err != nil {
-		log.Println(err.Error())
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Fatal(err.Error())
 	}
 }
 
